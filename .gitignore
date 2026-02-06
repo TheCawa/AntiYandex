@@ -1,11 +1,10 @@
 dist/
 build/
 *.spec
-
 __pycache__/
 *.pyc
 venv/
 .venv/
-
+.png
 Thumbs.db
 Desktop.ini

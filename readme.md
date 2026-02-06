@@ -4,6 +4,8 @@
 
 Это моя первая утилита, и я надеюсь, что она будет полезна для вас.
 
+![alt text](<scr1.png>)
+
 **Инструкция:**
 1. Скачайте последнюю версию с GitHub.
 2. Откройте программу.
@@ -19,7 +21,9 @@
 
 **English version:**
 
-This is my first utility, and I hope it will be useful to you. computer.
+This is my first utility, and I hope it will be useful to you.
+
+![alt text](<scr2.png>)
 
 **Instructions:**
 1. Download the latest version from GitHub.
