@@ -46,7 +46,9 @@ def t(key):
             "delete_first": "Сначала запустите поиск.",
             "registry_check_btn": "Реестр",
             "reg_found": "Найден в реестре",
-            "reg_not_found": "В реестре не найден"
+            "reg_not_found": "В реестре не найден",
+            "reg_removed": "Записи реестра очищены",
+            "reg_remove_fail": "Не удалось очистить реестр"
         },
         "en": {
             "title": "Yandex Remover",
@@ -66,7 +68,9 @@ def t(key):
             "delete_first": "Run search first.",
             "registry_check_btn": "Registry",
             "reg_found": "Found in registry",
-            "reg_not_found": "Not found in registry"
+            "reg_not_found": "Not found in registry",
+            "reg_removed": "Registry entries cleaned",
+            "reg_remove_fail": "Failed to clean registry"
         }
     }
     return translations[language].get(key, key)
@@ -96,6 +100,45 @@ def check_registry_for_yandex():
     else:
         update_status(t("reg_not_found"), "red")
         messagebox.showwarning(t("title"), t("reg_not_found"))
+
+def remove_registry_entries():
+    removed = False
+    registry_paths = [
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
+        (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Uninstall")
+    ]
+    
+    for hkey, path in registry_paths:
+        try:
+            keys_to_delete = []
+            with winreg.OpenKey(hkey, path) as key:
+                i = 0
+                while True:
+                    try:
+                        subkey_name = winreg.EnumKey(key, i)
+                        try:
+                            with winreg.OpenKey(key, subkey_name, 0, winreg.KEY_READ) as subkey:
+                                name = winreg.QueryValueEx(subkey, "DisplayName")[0]
+                                if "Yandex" in name or "Яндекс" in name:
+                                    keys_to_delete.append(subkey_name)
+                        except:
+                            pass
+                        i += 1
+                    except OSError:
+                        break
+            with winreg.OpenKey(hkey, path, 0, winreg.KEY_WRITE) as key:
+                for subkey_name in keys_to_delete:
+                    try:
+                        winreg.DeleteKey(key, subkey_name)
+                        removed = True
+                        print(f"Удалена запись: {subkey_name}")
+                    except Exception as e:
+                        print(f"Не удалось удалить {subkey_name}: {e}")
+        except:
+            continue
+    
+    return removed
 
 def kill_yandex_processes():
     killed = False
@@ -137,11 +180,15 @@ def uninstall_yandex_browser():
             if os.path.exists(found_path):
                 shutil.rmtree(found_path, ignore_errors=True)
                 if not os.path.exists(found_path):
+                    remove_registry_entries()
                     update_status(t("delete_success"), "green")
                     messagebox.showinfo(t("title"), t("delete_success"))
                     found_path = None
                 else:
                     raise Exception("Files locked")
+        except PermissionError:
+            update_status(t("delete_fail"), "red")
+            messagebox.showerror(t("title"), "Запустите программу от имени администратора для удаления записей реестра")
         except Exception as e:
             update_status(t("delete_fail"), "red")
             messagebox.showerror(t("title"), f"{t('delete_fail')}\nError: {e}")
