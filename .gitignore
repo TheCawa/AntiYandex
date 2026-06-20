@@ -8,3 +8,4 @@ venv/
 *.exe
 Thumbs.db
 Desktop.ini
+*.log
