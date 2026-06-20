@@ -132,9 +132,8 @@ def remove_registry_entries():
                     try:
                         winreg.DeleteKey(key, subkey_name)
                         removed = True
-                        print(f"Удалена запись: {subkey_name}")
                     except Exception as e:
-                        print(f"Не удалось удалить {subkey_name}: {e}")
+                        pass
         except:
             continue
     

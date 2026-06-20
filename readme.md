@@ -1,4 +1,4 @@
-# AntiYandex 1.2
+# AntiYandex 1.3
 
 **Русская версия:**
 
