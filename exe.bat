@@ -1,0 +1,2 @@
+pyinstaller --onefile --windowed --hidden-import=psutil --icon=icon.ico main.py
+pause
