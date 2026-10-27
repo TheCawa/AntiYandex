@@ -22,7 +22,9 @@ TRANSLATIONS = {
         "reg_not_found": "В реестре не найден",
         "reg_removed": "Записи реестра очищены",
         "reg_remove_fail": "Не удалось очистить реестр",
-        "admin_hint": "Запустите программу от имени администратора для удаления записей реестра",
+        "admin_hint": "Закройте Яндекс Браузер и запустите программу от имени администратора",
+        "warn_no_admin": "Программа запущена без прав администратора, очистка реестра может не сработать",
+        "delete_locked": "Не удалось удалить файлов: {}",
     },
     "en": {
         "title": "Yandex Remover",
@@ -45,17 +47,19 @@ TRANSLATIONS = {
         "reg_not_found": "Not found in registry",
         "reg_removed": "Registry entries cleaned",
         "reg_remove_fail": "Failed to clean registry",
-        "admin_hint": "Run the program as administrator to delete registry entries",
+        "admin_hint": "Close Yandex Browser and run the program as administrator",
+        "warn_no_admin": "Running without administrator right, registry cleanup may fail",
+        "delete_locked": "Files left undeleted: {}",
     },
 }
 
 
 def get_system_language():
     try:
-        lang = locale.getlocale()[0] or "en"
+        lang = (locale.getlocale()[0] or "en").lower()
     except Exception:
         lang = "en"
-    return "ru" if lang.startswith("ru") else "en"
+    return "ru" if lang.startswith(("ru", "russian")) else "en"
 
 
 class Translator:

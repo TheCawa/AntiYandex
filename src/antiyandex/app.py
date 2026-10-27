@@ -1,3 +1,4 @@
+import ctypes
 import threading
 import tkinter as tk
 from tkinter import messagebox
@@ -6,10 +7,17 @@ from . import browser, processes, registry
 from .i18n import Translator
 
 
+def is_admin():
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except (AttributeError, OSError):
+        return False
+
+
 class AntiYandexApp:
     def __init__(self):
         self.translator = Translator()
-        self.found_path = None
+        self.found_paths = []
 
         self.root = tk.Tk()
         self.root.geometry("500x350")
@@ -51,6 +59,9 @@ class AntiYandexApp:
     def set_status(self, text, color="black"):
         self.status_label.config(text=text, fg=color)
 
+    def run_in_ui(self, callback):
+        self.root.after(0, callback)
+
     def update_texts(self):
         self.root.title(self.t("title"))
         self.main_label.config(text=self.t("title"))
@@ -58,7 +69,10 @@ class AntiYandexApp:
         self.btn_registry.config(text=self.t("registry_check_btn"))
         self.btn_kill.config(text=self.t("kill_btn"))
         self.btn_delete.config(text=self.t("delete_btn"))
-        self.set_status(self.t("status_wait"), "blue")
+        if is_admin():
+            self.set_status(self.t("status_wait"), "blue")
+        else:
+            self.set_status(self.t("warn_no_admin"), "orange")
 
     def toggle_language(self):
         self.translator.toggle()
@@ -68,12 +82,18 @@ class AntiYandexApp:
         self.set_status(self.t("status_searching"), "blue")
 
         def task():
-            path = browser.find_browser_path()
-            self.found_path = path
-            if path:
-                self.set_status(self.t("status_found").format(path), "green")
-            else:
-                self.set_status(self.t("status_not_found"), "red")
+            paths = browser.find_browser_paths()
+
+            def done():
+                self.found_paths = paths
+                if paths:
+                    self.set_status(
+                        self.t("status_found").format("\n".join(paths)), "green"
+                    )
+                else:
+                    self.set_status(self.t("status_not_found"), "red")
+
+            self.run_in_ui(done)
 
         threading.Thread(target=task, daemon=True).start()
 
@@ -86,34 +106,69 @@ class AntiYandexApp:
             messagebox.showwarning(self.t("title"), self.t("reg_not_found"))
 
     def kill_processes(self):
-        if processes.kill_yandex_processes():
-            self.set_status(self.t("status_killed"), "green")
-            messagebox.showinfo(self.t("title"), self.t("success_kill"))
-        else:
-            self.set_status(self.t("status_no_proc"), "orange")
-            messagebox.showwarning(self.t("title"), self.t("not_found_warning"))
+        self.set_status(self.t("status_searching"), "blue")
+
+        def task():
+            killed = processes.kill_yandex_processes()
+
+            def done():
+                if killed:
+                    self.set_status(self.t("status_killed"), "green")
+                    messagebox.showinfo(self.t("title"), self.t("success_kill"))
+                else:
+                    self.set_status(self.t("status_no_proc"), "orange")
+                    messagebox.showwarning(self.t("title"), self.t("not_found_warning"))
+
+            self.run_in_ui(done)
+
+        threading.Thread(target=task, daemon=True).start()
 
     def delete_browser(self):
-        if not self.found_path:
+        if not self.found_paths:
             messagebox.showwarning(self.t("title"), self.t("delete_first"))
             return
 
+        paths = list(self.found_paths)
+
         def task():
-            try:
-                browser.remove_browser(self.found_path)
-            except PermissionError:
-                self.set_status(self.t("delete_fail"), "red")
-                messagebox.showerror(self.t("title"), self.t("admin_hint"))
-            except Exception as exc:
-                self.set_status(self.t("delete_fail"), "red")
-                messagebox.showerror(
-                    self.t("title"), "{}\nError: {}".format(self.t("delete_fail"), exc)
-                )
-            else:
-                registry.remove_yandex_entries()
+            locked = []
+            for path in paths:
+                try:
+                    locked.extend(browser.remove_browser(path))
+                except PermissionError:
+                    locked.append(path)
+                except OSError as exc:
+                    locked.append("{}: {}".format(path, exc))
+
+            if locked:
+                def fail():
+                    self.set_status(self.t("delete_fail"), "red")
+                    messagebox.showerror(
+                        self.t("title"),
+                        "{}\n\n{}".format(
+                            self.t("delete_locked").format(len(locked)),
+                            self.t("admin_hint"),
+                        ),
+                    )
+
+                self.run_in_ui(fail)
+                return
+
+            removed, failed = registry.remove_yandex_entries()
+
+            def done():
+                self.found_paths = []
                 self.set_status(self.t("delete_success"), "green")
-                messagebox.showinfo(self.t("title"), self.t("delete_success"))
-                self.found_path = None
+                message = self.t("delete_success")
+                if removed:
+                    message = "{}\n{}".format(message, self.t("reg_removed"))
+                if failed:
+                    message = "{}\n{}".format(message, self.t("reg_remove_fail"))
+                    messagebox.showwarning(self.t("title"), message)
+                else:
+                    messagebox.showinfo(self.t("title"), message)
+
+            self.run_in_ui(done)
 
         threading.Thread(target=task, daemon=True).start()
 

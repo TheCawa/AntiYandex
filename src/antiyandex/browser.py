@@ -9,14 +9,33 @@ YANDEX_PATHS = (
 )
 
 
-def find_browser_path():
+def find_browser_paths():
+    found = []
+    seen = set()
     for path in YANDEX_PATHS:
-        if path and os.path.exists(path):
-            return path
-    return None
+        if not path or not os.path.exists(path):
+            continue
+        key = os.path.normcase(os.path.abspath(path))
+        if key in seen:
+            continue
+        seen.add(key)
+        found.append(path)
+    return found
+
+
+def find_browser_path():
+    paths = find_browser_paths()
+    return paths[0] if paths else None
 
 
 def remove_browser(path):
     shutil.rmtree(path, ignore_errors=True)
-    if os.path.exists(path):
-        raise RuntimeError("Files locked")
+    if not os.path.exists(path):
+        return []
+
+    leftovers = []
+    for root, _dirs, files in os.walk(path):
+        leftovers.extend(os.path.join(root, name) for name in files)
+    if not leftovers:
+        leftovers.append(path)
+    return leftovers

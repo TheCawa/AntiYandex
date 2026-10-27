@@ -45,12 +45,12 @@ def _yandex_subkeys(hkey, path):
 
 
 def has_yandex_entries():
-    """True, если в реестре есть записи об установленном Яндекс Браузере."""
     return any(True for hkey, path in UNINSTALL_KEYS for _ in _yandex_subkeys(hkey, path))
 
 
 def remove_yandex_entries():
-    removed = False
+    removed = 0
+    failed = 0
     for hkey, path in UNINSTALL_KEYS:
         subkeys = list(_yandex_subkeys(hkey, path))
         if not subkeys:
@@ -60,9 +60,9 @@ def remove_yandex_entries():
                 for subkey_name in subkeys:
                     try:
                         winreg.DeleteKey(key, subkey_name)
-                        removed = True
+                        removed += 1
                     except OSError:
-                        pass
+                        failed += 1
         except OSError:
-            continue
-    return removed
+            failed += len(subkeys)
+    return removed, failed
