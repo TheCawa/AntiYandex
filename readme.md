@@ -2,7 +2,7 @@
 
 **Хочу сразу же отметить что это моя первая утилита, так что надеюсь что это программа будет вам полезна**
 
-![image](https://github.com/user-attachments/assets/a49a59d1-94b2-420a-a971-a09bff117a06)
+![image](assets/scr1.png)
 
 Инструкция:
 1. Скачайте последнию версию из **GitHub**
@@ -22,7 +22,7 @@
 
 **I want to immediately note that this is my first utility, so I hope that this program will be useful to you**
 
-![image](https://github.com/user-attachments/assets/3664aa33-3031-4fe6-a0e2-996d4a9822f9)
+![image](assets/scr2.png)
 
 
 Instructions:

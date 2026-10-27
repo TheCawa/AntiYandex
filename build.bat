@@ -18,7 +18,7 @@ python -m pip install --upgrade pip >nul
 python -m pip install psutil pyinstaller >nul
 
 echo [2/3] Сборка EXE...
-python -m PyInstaller --onefile --windowed --hidden-import=psutil --icon=icon.ico main.py
+python -m PyInstaller --noconfirm --onefile --windowed --hidden-import=psutil --paths=src --icon=assets\icon.ico src\main.py
 
 if %errorlevel% equ 0 (
     echo ===========================================
